@@ -97,6 +97,7 @@ def count_ngrams(self, corpus):
         for key, val in self.unigramcounts.items():
             self.unicnttotal += val
 
+        self.unicnt = self.unicnttotal
 ```
 
 ## part3
@@ -120,7 +121,7 @@ def raw_trigram_probability(self, trigram):
         if bigram in self.bigramcounts and bigram[0] in self.unigramcounts:
             return self.bigramcounts[bigram] / self.unigramcounts[bigram[0]]
         else:
-            return 0 
+            return 0
 
     def raw_unigram_probability(self, unigram):
         """
@@ -180,7 +181,7 @@ def perplexity(self, corpus):
         summ = 0
         for si in corpus:
             summ += self.sentence_logprob(si)
-        return 2 ** (-summ / self.unicnttotal)
+        return 2 ** (-summ / self.unicnt)
 ```
 
 ## part7
@@ -204,7 +205,6 @@ def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2)
         if pp1 < pp2:
             correct += 1
         total += 1
-
     #low
     for f in os.listdir(testdir2):
         pp2 = model2.perplexity(corpus_reader(

@@ -50,6 +50,20 @@ def get_ngrams(sequence, n):
     return n_grams
 
 
+def cnt_unigram(corpusfile, lexicon=None):
+        generator = corpus_reader(corpusfile, lexicon=lexicon)
+        unicnttotal = 0
+        unigram = []
+        for sentence in generator:
+            unigram += get_ngrams(sentence, 1)
+        unigramcounts = dict(collections.Counter(unigram))
+        # print(unigramcounts)
+        for key, val in unigramcounts.items():
+            unicnttotal += val
+        # print("unicnttotal", unicnttotal)
+        return unicnttotal
+
+
 class TrigramModel(object):
 
     def __init__(self, corpusfile):
@@ -64,6 +78,7 @@ class TrigramModel(object):
         # Now iterate through the corpus again and count ngrams
         generator = corpus_reader(corpusfile, self.lexicon)
         self.count_ngrams(generator)
+
 
     def count_ngrams(self, corpus):
         """
@@ -95,6 +110,8 @@ class TrigramModel(object):
         self.unicnttotal = 0
         for key, val in self.unigramcounts.items():
             self.unicnttotal += val
+
+        self.unicnt = self.unicnttotal
         # return
 
     def raw_trigram_probability(self, trigram):
@@ -115,7 +132,7 @@ class TrigramModel(object):
         if bigram in self.bigramcounts and bigram[0] in self.unigramcounts:
             return self.bigramcounts[bigram] / self.unigramcounts[bigram[0]]
         else:
-            return 0 
+            return 0
 
     def raw_unigram_probability(self, unigram):
         """
@@ -161,7 +178,9 @@ class TrigramModel(object):
         logprob = 0
         for i in trigrams:
             if self.smoothed_trigram_probability(i):
+                # print(self.smoothed_trigram_probability(i))
                 logprob += math.log2(self.smoothed_trigram_probability(i))
+        # print(logprob)
         return logprob
 
     def perplexity(self, corpus):
@@ -169,14 +188,11 @@ class TrigramModel(object):
         COMPLETE THIS METHOD (PART 6)
         Returns the log probability of an entire sequence.
         """
-        # words = 0
         summ = 0
         for si in corpus:
-            # print(si)
             summ += self.sentence_logprob(si)
-            # words += self.unicnttotal
-            # print(si)
-        return 2 ** (-summ / self.unicnttotal)
+        # print("2 power:", summ, self.unicnt)
+        return 2 ** (-summ / self.unicnt)
 
 
 def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2):
@@ -197,7 +213,6 @@ def essay_scoring_experiment(training_file1, training_file2, testdir1, testdir2)
         if pp1 < pp2:
             correct += 1
         total += 1
-
     #low
     for f in os.listdir(testdir2):
         pp2 = model2.perplexity(corpus_reader(
@@ -224,15 +239,26 @@ if __name__ == "__main__":
     # Python prompt.
 
     # Testing perplexity:
-    dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
+    
     dev_corpus_train = corpus_reader(sys.argv[1], model.lexicon)
-    pp = model.perplexity(dev_corpus)
     pp_train = model.perplexity(dev_corpus_train)
-    print("pp test:",pp)
-    print("pp train:",pp_train)
+    # print(model.trigramcounts[('START','START','the')])
+    # print(model.bigramcounts[('START','the')])
+    # print(model.unigramcounts[('the',)])
+    # print("train cnt:", model.unicnttotal)
+    print("pp train:", pp_train)
+
+    
+    # print(dev_corpus[:3])
+    model.unicnt = cnt_unigram(sys.argv[2])
+    dev_corpus = corpus_reader(sys.argv[2], model.lexicon)
+    # print("test cnt:", model.unicnt)
+    pp = model.perplexity(dev_corpus)
+    print("pp test:", pp)
+    
 
     # Essay scoring experiment:
     acc = essay_scoring_experiment('hw1_data/ets_toefl_data/train_high.txt', 
         'hw1_data/ets_toefl_data/train_low.txt', 'hw1_data/ets_toefl_data/test_high', 
         'hw1_data/ets_toefl_data/test_low')
-    print("Accuracy: ",acc)
+    print("Accuracy: ", acc)
